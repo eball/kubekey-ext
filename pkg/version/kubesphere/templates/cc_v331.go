@@ -17,12 +17,13 @@
 package templates
 
 import (
-	"github.com/lithammer/dedent"
-	"text/template"
+  "text/template"
+
+  "github.com/lithammer/dedent"
 )
 
 var V331 = template.Must(template.New("v3.3.1").Parse(
-	dedent.Dedent(`
+  dedent.Dedent(`
 ---
 apiVersion: installer.kubesphere.io/v1alpha1
 kind: ClusterConfiguration
@@ -157,7 +158,7 @@ spec:
     clusterRole: none
   network:
     networkpolicy:
-      enabled: false
+      enabled: enable
     ippool:
       type: none
     topology:

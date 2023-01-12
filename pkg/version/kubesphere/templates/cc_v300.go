@@ -17,12 +17,13 @@
 package templates
 
 import (
-	"github.com/lithammer/dedent"
-	"text/template"
+  "text/template"
+
+  "github.com/lithammer/dedent"
 )
 
 var V300 = template.Must(template.New("v3.0.0").Parse(
-	dedent.Dedent(`---
+  dedent.Dedent(`---
 apiVersion: installer.kubesphere.io/v1alpha1
 kind: ClusterConfiguration
 metadata:
@@ -84,7 +85,7 @@ spec:
   multicluster:
     clusterRole: none  # host | member | none
   networkpolicy:
-    enabled: false
+    enabled: enable
   notification:
     enabled: false
   openpitrix:
