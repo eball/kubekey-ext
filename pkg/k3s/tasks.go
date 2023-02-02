@@ -20,9 +20,10 @@ import (
 	"context"
 	"encoding/base64"
 	"fmt"
-	"github.com/kubesphere/kubekey/pkg/registry"
 	"path/filepath"
 	"strings"
+
+	"github.com/kubesphere/kubekey/pkg/registry"
 
 	kubekeyapiv1alpha2 "github.com/kubesphere/kubekey/apis/kubekey/v1alpha2"
 	kubekeyregistry "github.com/kubesphere/kubekey/pkg/bootstrap/registry"
@@ -516,18 +517,12 @@ type GenerateK3sRegistryConfig struct {
 }
 
 func (g *GenerateK3sRegistryConfig) Execute(runtime connector.Runtime) error {
-	endpointPrefix := "https://"
 	dockerioMirror := registry.Mirror{}
 	registryConfigs := map[string]registry.RegistryConfig{}
 
 	auths := registry.DockerRegistryAuthEntries(g.KubeConf.Cluster.Registry.Auths)
-	for k, v := range auths {
-		if k == g.KubeConf.Cluster.Registry.PrivateRegistry && v.PlainHTTP {
-			endpointPrefix = "http://"
-		}
-	}
 
-	dockerioMirror.Endpoints = []string{fmt.Sprintf("%s%s", endpointPrefix, g.KubeConf.Cluster.Registry.PrivateRegistry)}
+	dockerioMirror.Endpoints = g.KubeConf.Cluster.Registry.RegistryMirrors
 
 	if g.KubeConf.Cluster.Registry.NamespaceOverride != "" {
 		dockerioMirror.Rewrites = map[string]string{

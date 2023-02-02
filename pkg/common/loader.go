@@ -79,7 +79,10 @@ func NewDefaultLoader(arg Argument) *DefaultLoader {
 }
 
 func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, _ := user.Current()
+	u, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
 	if u.Username != "root" {
 		return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
 	}
@@ -140,6 +143,18 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		if err := defaultKSConfig(&allInOne.Spec.KubeSphere, ver); err != nil {
 			return nil, err
 		}
+	}
+
+	if d.arg.RegistryMirrors != "" {
+		mirrors := strings.Split(d.arg.RegistryMirrors, ",")
+
+		for _, mirror := range mirrors {
+			if !(strings.HasPrefix(mirror, "http://") || strings.HasPrefix(mirror, "https://")) {
+				return nil, errors.New(fmt.Sprintf("Invalid registry mirror: %s, missing scheme 'http://' or 'https://'", mirror))
+			}
+		}
+
+		allInOne.Spec.Registry.RegistryMirrors = mirrors
 	}
 
 	if d.arg.ContainerManager != "" && d.arg.ContainerManager != Docker {

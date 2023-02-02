@@ -17,12 +17,13 @@
 package k3s
 
 import (
+	"path/filepath"
+
 	"github.com/kubesphere/kubekey/pkg/common"
 	"github.com/kubesphere/kubekey/pkg/core/action"
 	"github.com/kubesphere/kubekey/pkg/core/prepare"
 	"github.com/kubesphere/kubekey/pkg/core/task"
 	"github.com/kubesphere/kubekey/pkg/k3s/templates"
-	"path/filepath"
 )
 
 type StatusModule struct {
@@ -150,7 +151,7 @@ func (i *InitClusterModule) Init() {
 		Prepare: &prepare.PrepareCollection{
 			new(common.OnlyFirstMaster),
 			&ClusterIsExist{Not: true},
-			&UsePrivateRegstry{Not: false},
+			//&UsePrivateRegstry{Not: false},
 		},
 		Action:   new(GenerateK3sRegistryConfig),
 		Parallel: true,

@@ -17,8 +17,6 @@
 package common
 
 import (
-	"strings"
-
 	kubekeyapiv1alpha2 "github.com/kubesphere/kubekey/apis/kubekey/v1alpha2"
 	kubekeyclientset "github.com/kubesphere/kubekey/clients/clientset/versioned"
 	"github.com/kubesphere/kubekey/pkg/core/connector"
@@ -64,9 +62,6 @@ type Argument struct {
 
 	// Registry mirrors
 	RegistryMirrors string
-
-	// os dns nameserver
-	OsNameservers []string
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
@@ -74,11 +69,6 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 	cluster, err := loader.Load()
 	if err != nil {
 		return nil, err
-	}
-
-	// add registry mirrors
-	if arg.RegistryMirrors != "" {
-		cluster.Spec.Registry.RegistryMirrors = strings.Split(arg.RegistryMirrors, ",")
 	}
 
 	if err = loadExtraAddons(cluster, arg.ExtraAddon); err != nil {
