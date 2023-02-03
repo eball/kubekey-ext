@@ -59,8 +59,7 @@ func (c *ConfigureOSModule) Init() {
 			Template: templates.InitOsScriptTmpl,
 			Dst:      filepath.Join(common.KubeScriptDir, "initOS.sh"),
 			Data: util.Data{
-				"Hosts":       templates.GenerateHosts(c.Runtime, c.KubeConf),
-				"Nameservers": c.KubeConf.Arg.OsNameservers,
+				"Hosts": templates.GenerateHosts(c.Runtime, c.KubeConf),
 			},
 		},
 		Parallel: true,
