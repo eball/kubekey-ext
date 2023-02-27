@@ -34,7 +34,6 @@ import (
 func NewDeleteClusterPipeline(runtime *common.KubeRuntime) error {
 	m := []module.Module{
 		&precheck.GreetingsModule{},
-		&confirm.DeleteClusterConfirmModule{},
 		&kubernetes.ResetClusterModule{},
 		&container.UninstallContainerModule{Skip: !runtime.Arg.DeleteCRI},
 		&os.ClearOSEnvironmentModule{},
@@ -56,7 +55,6 @@ func NewDeleteClusterPipeline(runtime *common.KubeRuntime) error {
 func NewK3sDeleteClusterPipeline(runtime *common.KubeRuntime) error {
 	m := []module.Module{
 		&precheck.GreetingsModule{},
-		&confirm.DeleteClusterConfirmModule{},
 		&k3s.DeleteClusterModule{},
 		&os.ClearOSEnvironmentModule{},
 		&certs.UninstallAutoRenewCertsModule{},
