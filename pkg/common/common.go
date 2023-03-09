@@ -23,9 +23,10 @@ const (
 
 	LocalHost = "localhost"
 
-	AllInOne = "allInOne"
-	File     = "file"
-	Operator = "operator"
+	AllInOne    = "allInOne"
+	File        = "file"
+	Operator    = "operator"
+	CommandLine = "commandLine"
 
 	Master        = "master"
 	Worker        = "worker"

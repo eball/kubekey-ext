@@ -17,6 +17,7 @@ limitations under the License.
 package add
 
 import (
+	kubekeyapiv1alpha2 "github.com/kubesphere/kubekey/apis/kubekey/v1alpha2"
 	"github.com/kubesphere/kubekey/cmd/ctl/options"
 	"github.com/kubesphere/kubekey/cmd/ctl/util"
 	"github.com/kubesphere/kubekey/pkg/common"
@@ -32,6 +33,17 @@ type AddNodesOptions struct {
 	DownloadCmd      string
 	Artifact         string
 	InstallPackages  bool
+
+	Kubernetes              string
+	RegistryMirrors         string
+	MasterHost              string
+	MasterNodeName          string
+	MasterSSHPort           int
+	MasterSSHUser           string
+	MasterSSHPassword       string
+	MasterSSHPrivateKeyPath string
+
+	LocalSSHPort int
 }
 
 func NewAddNodesOptions() *AddNodesOptions {
@@ -77,6 +89,16 @@ func (o *AddNodesOptions) Run() error {
 		Artifact:         o.Artifact,
 		InstallPackages:  o.InstallPackages,
 		Namespace:        o.CommonOptions.Namespace,
+
+		KubernetesVersion:       o.Kubernetes,
+		RegistryMirrors:         o.RegistryMirrors,
+		MasterHost:              o.MasterHost,
+		MasterNodeName:          o.MasterNodeName,
+		MasterSSHPort:           o.MasterSSHPort,
+		MasterSSHUser:           o.MasterSSHUser,
+		MasterSSHPassword:       o.MasterSSHPassword,
+		MasterSSHPrivateKeyPath: o.MasterSSHPrivateKeyPath,
+		LocalSSHPort:            o.LocalSSHPort,
 	}
 	return pipelines.AddNodes(arg, o.DownloadCmd)
 }
@@ -85,8 +107,18 @@ func (o *AddNodesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.ClusterCfgFile, "filename", "f", "", "Path to a configuration file")
 	cmd.Flags().BoolVarP(&o.SkipPullImages, "skip-pull-images", "", false, "Skip pre pull images")
 	cmd.Flags().StringVarP(&o.ContainerManager, "container-manager", "", "docker", "Container manager: docker, crio, containerd and isula.")
-	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -L -o %s %s",
+	cmd.Flags().StringVarP(&o.DownloadCmd, "download-cmd", "", "curl -kL -o %s %s",
 		`The user defined command to download the necessary binary files. The first param '%s' is output path, the second param '%s', is the URL`)
 	cmd.Flags().StringVarP(&o.Artifact, "artifact", "a", "", "Path to a KubeKey artifact")
 	cmd.Flags().BoolVarP(&o.InstallPackages, "with-packages", "", false, "install operation system packages by artifact")
+
+	cmd.Flags().StringVarP(&o.Kubernetes, "with-kubernetes", "", "", "Specify a supported version of kubernetes")
+	cmd.Flags().StringVarP(&o.RegistryMirrors, "registry-mirrors", "", "", "Docker Container registry mirrors, multiple mirrors are separated by commas")
+	cmd.Flags().StringVarP(&o.MasterHost, "master-host", "", "", "master node ip address")
+	cmd.Flags().StringVarP(&o.MasterNodeName, "master-node-name", "", "", "master node name for k8s")
+	cmd.Flags().IntVarP(&o.MasterSSHPort, "master-ssh-port", "", kubekeyapiv1alpha2.DefaultSSHPort, "master node ip address")
+	cmd.Flags().StringVarP(&o.MasterSSHUser, "master-ssh-user", "", "", "master node ssh username")
+	cmd.Flags().StringVarP(&o.MasterSSHPassword, "master-ssh-password", "", "", "master node ssh password")
+	cmd.Flags().StringVarP(&o.MasterSSHPrivateKeyPath, "master-ssh-private-keyfile", "", "", "master node ssh private key file")
+	cmd.Flags().IntVarP(&o.LocalSSHPort, "local-ssh-port", "", kubekeyapiv1alpha2.DefaultSSHPort, "current worker node(localhost) ssh port")
 }

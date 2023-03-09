@@ -30,13 +30,12 @@ import (
 	"strings"
 	"time"
 
-	"github.com/pkg/errors"
-	"gopkg.in/yaml.v2"
-	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
-
 	kubekeyapiv1alpha2 "github.com/kubesphere/kubekey/apis/kubekey/v1alpha2"
 	"github.com/kubesphere/kubekey/pkg/core/util"
 	"github.com/kubesphere/kubekey/pkg/version/kubesphere"
+	"github.com/pkg/errors"
+	"gopkg.in/yaml.v2"
+	k8syaml "k8s.io/apimachinery/pkg/util/yaml"
 )
 
 var (
@@ -57,9 +56,112 @@ func NewLoader(flag string, arg Argument) Loader {
 		return &ConfigMapLoader{}
 	case AllInOne:
 		return NewDefaultLoader(arg)
+	case CommandLine:
+		return NewCommandLineLoader(arg)
 	default:
 		return NewDefaultLoader(arg)
 	}
+}
+
+type CommandLineLoader struct {
+	arg               Argument
+	hostname          string
+	kubernetesVersion string
+}
+
+func NewCommandLineLoader(arg Argument) *CommandLineLoader {
+	return &CommandLineLoader{
+		arg:               arg,
+		kubernetesVersion: arg.KubernetesVersion,
+	}
+}
+
+func (c *CommandLineLoader) validate() error {
+	hostname, err := os.Hostname()
+	if err != nil {
+		return errors.New(fmt.Sprintf("Failed to get hostname: %v\n", err))
+	}
+
+	c.hostname = hostname
+
+	// flags
+	if c.arg.MasterNodeName == "" {
+		return errors.New("No master nodeName provided, with flag '--master-node-name'")
+	}
+	if c.arg.MasterHost == "" {
+		return errors.New("No master host provided, with flag '--master-host'")
+	}
+	if c.arg.MasterSSHUser == "" {
+		return errors.New("No master ssh user provided, with flag '--master-ssh-user'")
+	}
+	if c.arg.KubernetesVersion == "" {
+		return errors.New("No kubernetes version provided, with flag '--with-kubernetes'")
+	}
+	if c.arg.MasterSSHPassword == "" && c.arg.MasterSSHPrivateKeyPath == "" {
+		return errors.New("No master ssh password and private key file, with flag '--master-ssh-password' or '--master-ssh-private-keyfile'")
+	}
+
+	if err := localSSH(); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (c *CommandLineLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
+	u, err := currentUser()
+	if err != nil {
+		return nil, err
+	}
+
+	if err := c.validate(); err != nil {
+		return nil, err
+	}
+
+	cluster := &kubekeyapiv1alpha2.Cluster{}
+
+	// current node
+	cluster.Spec.Hosts = append(cluster.Spec.Hosts, kubekeyapiv1alpha2.HostCfg{
+		Name:            c.hostname,
+		Address:         util.LocalIP(),
+		InternalAddress: util.LocalIP(),
+		Port:            c.arg.LocalSSHPort,
+		User:            u.Name,
+		PrivateKeyPath:  fmt.Sprintf("%s/.ssh/id_rsa", u.HomeDir),
+		Arch:            runtime.GOARCH,
+	})
+
+	cluster.Spec.RoleGroups = map[string][]string{
+		Worker: {c.hostname},
+	}
+
+	// master node
+	masterHostCfg := kubekeyapiv1alpha2.HostCfg{
+		Name:            c.arg.MasterNodeName,
+		Address:         c.arg.MasterHost,
+		InternalAddress: c.arg.MasterHost,
+		Port:            c.arg.MasterSSHPort,
+		User:            c.arg.MasterSSHUser,
+		Arch:            runtime.GOARCH,
+	}
+	if c.arg.MasterSSHPassword != "" {
+		masterHostCfg.Password = c.arg.MasterSSHPassword
+	}
+	if c.arg.MasterSSHPrivateKeyPath != "" {
+		masterHostCfg.Password = ""
+		masterHostCfg.PrivateKeyPath = c.arg.MasterSSHPrivateKeyPath
+	}
+
+	cluster.Spec.Hosts = append(cluster.Spec.Hosts, masterHostCfg)
+
+	cluster.Spec.RoleGroups[Master] = []string{c.arg.MasterNodeName}
+	cluster.Spec.RoleGroups[ETCD] = []string{c.arg.MasterNodeName}
+
+	if err := defaultCommonClusterConfig(cluster, c.arg); err != nil {
+		return nil, err
+	}
+
+	return cluster, nil
 }
 
 type DefaultLoader struct {
@@ -79,20 +181,15 @@ func NewDefaultLoader(arg Argument) *DefaultLoader {
 }
 
 func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
-	u, err := user.Current()
+	u, err := currentUser()
 	if err != nil {
 		return nil, err
 	}
-	if u.Username != "root" {
-		return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
-	}
 
-	allInOne := kubekeyapiv1alpha2.Cluster{}
-	if output, err := exec.Command("/bin/sh", "-c", "if [ ! -f \"$HOME/.ssh/id_rsa\" ]; then ssh-keygen -t rsa-sha2-512 -P \"\" -f $HOME/.ssh/id_rsa && ls $HOME/.ssh;fi;").CombinedOutput(); err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to generate public key: %v\n%s", err, string(output)))
-	}
-	if output, err := exec.Command("/bin/sh", "-c", "echo \"\n$(cat $HOME/.ssh/id_rsa.pub)\" >> $HOME/.ssh/authorized_keys && awk ' !x[$0]++{print > \"'$HOME'/.ssh/authorized_keys\"}' $HOME/.ssh/authorized_keys").CombinedOutput(); err != nil {
-		return nil, errors.New(fmt.Sprintf("Failed to copy public key to authorized_keys: %v\n%s", err, string(output)))
+	allInOne := &kubekeyapiv1alpha2.Cluster{}
+
+	if err := localSSH(); err != nil {
+		return nil, err
 	}
 
 	hostname, err := os.Hostname()
@@ -145,28 +242,15 @@ func (d *DefaultLoader) Load() (*kubekeyapiv1alpha2.Cluster, error) {
 		}
 	}
 
-	if d.arg.RegistryMirrors != "" {
-		mirrors := strings.Split(d.arg.RegistryMirrors, ",")
-
-		for _, mirror := range mirrors {
-			if !(strings.HasPrefix(mirror, "http://") || strings.HasPrefix(mirror, "https://")) {
-				return nil, errors.New(fmt.Sprintf("Invalid registry mirror: %s, missing scheme 'http://' or 'https://'", mirror))
-			}
-		}
-
-		allInOne.Spec.Registry.RegistryMirrors = mirrors
+	if err := defaultCommonClusterConfig(allInOne, d.arg); err != nil {
+		return nil, err
 	}
 
-	if d.arg.ContainerManager != "" && d.arg.ContainerManager != Docker {
-		allInOne.Spec.Kubernetes.ContainerManager = d.arg.ContainerManager
-	}
-
+	// certs renew
 	enableAutoRenewCerts := true
 	allInOne.Spec.Kubernetes.AutoRenewCerts = &enableAutoRenewCerts
 
-	// must be a lower case
-	allInOne.Name = "kubekey" + time.Now().Format("2006-01-02")
-	return &allInOne, nil
+	return allInOne, nil
 }
 
 type FileLoader struct {
@@ -355,6 +439,71 @@ func loadExtraAddons(cluster *kubekeyapiv1alpha2.Cluster, addonFile string) erro
 	if len(result.Addons) > 0 {
 		cluster.Spec.Addons = append(cluster.Spec.Addons, result.Addons...)
 	}
+
+	return nil
+}
+
+func currentUser() (*user.User, error) {
+	u, err := user.Current()
+	if err != nil {
+		return nil, err
+	}
+
+	if u.Username != "root" {
+		return nil, errors.New(fmt.Sprintf("Current user is %s. Please use root!", u.Username))
+	}
+	return u, nil
+}
+
+func localSSH() error {
+	if output, err := exec.Command("/bin/sh", "-c", "if [ ! -f \"$HOME/.ssh/id_rsa\" ]; then ssh-keygen -t rsa-sha2-512 -P \"\" -f $HOME/.ssh/id_rsa && ls $HOME/.ssh;fi;").CombinedOutput(); err != nil {
+		return errors.New(fmt.Sprintf("Failed to generate public key: %v\n%s", err, string(output)))
+	}
+	if output, err := exec.Command("/bin/sh", "-c", "echo \"\n$(cat $HOME/.ssh/id_rsa.pub)\" >> $HOME/.ssh/authorized_keys && awk ' !x[$0]++{print > \"'$HOME'/.ssh/authorized_keys\"}' $HOME/.ssh/authorized_keys").CombinedOutput(); err != nil {
+		return errors.New(fmt.Sprintf("Failed to copy public key to authorized_keys: %v\n%s", err, string(output)))
+	}
+
+	return nil
+}
+
+// defaultCommonClusterConfig kubernetes version, registry mirrors, container manager, etc.
+func defaultCommonClusterConfig(cluster *kubekeyapiv1alpha2.Cluster, arg Argument) error {
+	if ver := normalizedBuildVersion(arg.KubernetesVersion); ver != "" {
+		s := strings.Split(ver, "-")
+		if len(s) > 1 {
+			cluster.Spec.Kubernetes = kubekeyapiv1alpha2.Kubernetes{
+				Version: s[0],
+				Type:    s[1],
+			}
+		} else {
+			cluster.Spec.Kubernetes = kubekeyapiv1alpha2.Kubernetes{
+				Version: ver,
+			}
+		}
+	} else {
+		cluster.Spec.Kubernetes = kubekeyapiv1alpha2.Kubernetes{
+			Version: kubekeyapiv1alpha2.DefaultKubeVersion,
+		}
+	}
+
+	if arg.RegistryMirrors != "" {
+		mirrors := strings.Split(arg.RegistryMirrors, ",")
+
+		for _, mirror := range mirrors {
+			if !(strings.HasPrefix(mirror, "http://") || strings.HasPrefix(mirror, "https://")) {
+				return errors.New(fmt.Sprintf("Invalid registry mirror: %s, missing scheme 'http://' or 'https://'", mirror))
+			}
+		}
+
+		cluster.Spec.Registry.RegistryMirrors = mirrors
+	}
+
+	if arg.ContainerManager != "" && arg.ContainerManager != Docker {
+		cluster.Spec.Kubernetes.ContainerManager = arg.ContainerManager
+	}
+
+	// must be a lower case
+	cluster.Name = "kubekey" + time.Now().Format("2006-01-02")
 
 	return nil
 }

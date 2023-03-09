@@ -217,6 +217,8 @@ func AddNodes(args common.Argument, downloadCmd string) error {
 	var loaderType string
 	if args.FilePath != "" {
 		loaderType = common.File
+	} else if args.MasterNodeName != "" && args.MasterHost != "" {
+		loaderType = common.CommandLine
 	} else {
 		loaderType = common.AllInOne
 	}
