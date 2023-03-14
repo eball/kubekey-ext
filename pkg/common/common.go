@@ -95,4 +95,6 @@ const (
 
 	// Artifact pipeline
 	Artifact = "artifact"
+
+	SkipMasterNodePullImages = "skipMasterNodePullImages"
 )

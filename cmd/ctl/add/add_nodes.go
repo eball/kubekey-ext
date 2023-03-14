@@ -44,6 +44,8 @@ type AddNodesOptions struct {
 	MasterSSHPrivateKeyPath string
 
 	LocalSSHPort int
+
+	SkipMasterPullImages bool
 }
 
 func NewAddNodesOptions() *AddNodesOptions {
@@ -99,6 +101,7 @@ func (o *AddNodesOptions) Run() error {
 		MasterSSHPassword:       o.MasterSSHPassword,
 		MasterSSHPrivateKeyPath: o.MasterSSHPrivateKeyPath,
 		LocalSSHPort:            o.LocalSSHPort,
+		SkipMasterPullImages:    o.SkipMasterPullImages,
 	}
 	return pipelines.AddNodes(arg, o.DownloadCmd)
 }
@@ -121,4 +124,5 @@ func (o *AddNodesOptions) AddFlags(cmd *cobra.Command) {
 	cmd.Flags().StringVarP(&o.MasterSSHPassword, "master-ssh-password", "", "", "master node ssh password")
 	cmd.Flags().StringVarP(&o.MasterSSHPrivateKeyPath, "master-ssh-private-keyfile", "", "", "master node ssh private key file")
 	cmd.Flags().IntVarP(&o.LocalSSHPort, "local-ssh-port", "", kubekeyapiv1alpha2.DefaultSSHPort, "current worker node(localhost) ssh port")
+	cmd.Flags().BoolVarP(&o.SkipMasterPullImages, "skip-master-pull-images", "", false, "Skip master node pull images")
 }
