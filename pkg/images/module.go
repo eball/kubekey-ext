@@ -18,6 +18,7 @@ package images
 
 import (
 	"github.com/kubesphere/kubekey/pkg/common"
+	"github.com/kubesphere/kubekey/pkg/core/prepare"
 	"github.com/kubesphere/kubekey/pkg/core/task"
 )
 
@@ -35,9 +36,12 @@ func (p *PullModule) Init() {
 	p.Desc = "Pull images on all nodes"
 
 	pull := &task.RemoteTask{
-		Name:     "PullImages",
-		Desc:     "Start to pull images on all nodes",
-		Hosts:    p.Runtime.GetAllHosts(),
+		Name:  "PullImages",
+		Desc:  "Start to pull images on all nodes",
+		Hosts: p.Runtime.GetAllHosts(),
+		Prepare: &prepare.PrepareCollection{
+			&MasterPullImages{Not: true},
+		},
 		Action:   new(PullImage),
 		Parallel: true,
 	}

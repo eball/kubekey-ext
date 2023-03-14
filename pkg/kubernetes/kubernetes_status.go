@@ -18,13 +18,14 @@ package kubernetes
 
 import (
 	"fmt"
-	"github.com/kubesphere/kubekey/pkg/common"
-	"github.com/kubesphere/kubekey/pkg/core/connector"
-	"github.com/pkg/errors"
 	"io/ioutil"
 	"path/filepath"
 	"regexp"
 	"strings"
+
+	"github.com/kubesphere/kubekey/pkg/common"
+	"github.com/kubesphere/kubekey/pkg/core/connector"
+	"github.com/pkg/errors"
 )
 
 type KubernetesStatus struct {
@@ -88,7 +89,7 @@ func (k *KubernetesStatus) SearchJoinInfo(runtime connector.Runtime) error {
 
 func (k *KubernetesStatus) SearchClusterInfo(runtime connector.Runtime) error {
 	output, err := runtime.GetRunner().SudoCmd(
-		"/usr/local/bin/kubectl --no-headers=true get nodes -o custom-columns=:metadata.name,:status.nodeInfo.kubeletVersion,:status.addresses",
+		"/usr/local/bin/kubectl --kubeconfig=/etc/kubernetes/admin.conf --no-headers=true get nodes -o custom-columns=:metadata.name,:status.nodeInfo.kubeletVersion,:status.addresses",
 		true)
 	if err != nil {
 		return errors.Wrap(errors.WithStack(err), "get kubernetes cluster info failed")
@@ -154,7 +155,7 @@ func patchKubeadmSecret(runtime connector.Runtime) error {
 	externalEtcdCerts := []string{"external-etcd-ca.crt", "external-etcd.crt", "external-etcd.key"}
 	for _, cert := range externalEtcdCerts {
 		_, err := runtime.GetRunner().SudoCmd(
-			fmt.Sprintf("/usr/local/bin/kubectl patch -n kube-system secret kubeadm-certs -p '{\\\"data\\\": {\\\"%s\\\": \\\"\\\"}}'", cert),
+			fmt.Sprintf("/usr/local/bin/kubectl --kubeconfig=/etc/kubernetes/admin.conf patch -n kube-system secret kubeadm-certs -p '{\\\"data\\\": {\\\"%s\\\": \\\"\\\"}}'", cert),
 			true)
 		if err != nil {
 			return errors.Wrap(errors.WithStack(err), "patch kubeadm secret failed")

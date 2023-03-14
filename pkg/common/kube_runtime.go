@@ -62,6 +62,17 @@ type Argument struct {
 
 	// Registry mirrors
 	RegistryMirrors string
+
+	// master node ssh config
+	MasterHost              string
+	MasterNodeName          string
+	MasterSSHPort           int
+	MasterSSHUser           string
+	MasterSSHPassword       string
+	MasterSSHPrivateKeyPath string
+	LocalSSHPort            int
+
+	SkipMasterPullImages bool
 }
 
 func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
@@ -85,6 +96,9 @@ func NewKubeRuntime(flag string, arg Argument) (*KubeRuntime, error) {
 		for _, host := range role {
 			if host.IsRole(Master) || host.IsRole(Worker) {
 				host.SetRole(K8s)
+			}
+			if host.IsRole(Master) && arg.SkipMasterPullImages {
+				host.GetCache().Set(SkipMasterNodePullImages, true)
 			}
 			if _, ok := hostSet[host.GetName()]; !ok {
 				hostSet[host.GetName()] = struct{}{}
