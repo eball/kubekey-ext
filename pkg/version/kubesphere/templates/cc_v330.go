@@ -17,13 +17,13 @@
 package templates
 
 import (
-  "text/template"
+	"text/template"
 
-  "github.com/lithammer/dedent"
+	"github.com/lithammer/dedent"
 )
 
 var V330 = template.Must(template.New("v3.3.0").Parse(
-  dedent.Dedent(`
+	dedent.Dedent(`
 ---
 apiVersion: installer.kubesphere.io/v1alpha1
 kind: ClusterConfiguration
@@ -57,7 +57,7 @@ spec:
     # controllerManager:
     #  resources: {}
     redis:
-      enabled: false
+      enabled: true
       volumeSize: 2Gi
     openldap:
       enabled: false
