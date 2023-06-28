@@ -18,11 +18,13 @@ package util
 
 import (
 	"encoding/binary"
-	"github.com/kubesphere/kubekey/pkg/core/logger"
-	"github.com/pkg/errors"
 	"net"
+	"os"
 	"strconv"
 	"strings"
+
+	"github.com/kubesphere/kubekey/pkg/core/logger"
+	"github.com/pkg/errors"
 )
 
 func ParseIp(ip string) []string {
@@ -142,14 +144,21 @@ func intToIP(n int32) net.IP {
 	return net.IP(b)
 }
 
+func IsPrivateIPv4Addr(ip net.IP) bool {
+	ip4 := ip.To4()
+	return ip4 != nil && ip4.IsGlobalUnicast() && (ip4[0] == 10 ||
+		(ip4[0] == 172 && ip4[1]&0xf0 == 16) ||
+		(ip4[0] == 192 && ip4[1] == 168))
+}
+
 func GetLocalIP() (string, error) {
 	addrs, err := net.InterfaceAddrs()
 	if err != nil {
 		return "", err
 	}
 	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil && ipnet.IP.IsGlobalUnicast() {
+		if ipnet, ok := addr.(*net.IPNet); ok && ipnet != nil {
+			if ipnet.IP != nil && IsPrivateIPv4Addr(ipnet.IP) {
 				return ipnet.IP.String(), nil
 			}
 		}
@@ -158,7 +167,18 @@ func GetLocalIP() (string, error) {
 }
 
 func LocalIP() string {
-	localIp, err := GetLocalIP()
+	var localIp string
+	var err error
+
+	localIp = os.Getenv("OS_LOCALIP")
+	if localIp != "" {
+		ip := net.ParseIP(localIp)
+		if ip != nil && IsPrivateIPv4Addr(ip) {
+			return localIp
+		}
+	}
+
+	localIp, err = GetLocalIP()
 	if err != nil {
 		logger.Log.Fatalf("Failed to get Local IP: %v", err)
 	}
