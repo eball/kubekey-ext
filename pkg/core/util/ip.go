@@ -18,11 +18,12 @@ package util
 
 import (
 	"encoding/binary"
-	"github.com/kubesphere/kubekey/pkg/core/logger"
-	"github.com/pkg/errors"
 	"net"
 	"strconv"
 	"strings"
+
+	"github.com/kubesphere/kubekey/pkg/core/logger"
+	"github.com/pkg/errors"
 )
 
 func ParseIp(ip string) []string {
@@ -148,8 +149,8 @@ func GetLocalIP() (string, error) {
 		return "", err
 	}
 	for _, addr := range addrs {
-		if ipnet, ok := addr.(*net.IPNet); ok && !ipnet.IP.IsLoopback() {
-			if ipnet.IP.To4() != nil && ipnet.IP.IsGlobalUnicast() {
+		if ipnet, ok := addr.(*net.IPNet); ok && ipnet != nil {
+			if ipnet.IP.To4() != nil && ipnet.IP.IsGlobalUnicast() && ipnet.IP.IsPrivate() {
 				return ipnet.IP.String(), nil
 			}
 		}
