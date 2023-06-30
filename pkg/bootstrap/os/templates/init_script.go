@@ -77,6 +77,8 @@ echo 'net.ipv4.tcp_keepalive_time = 1800' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_keepalive_probes = 3' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_keepalive_intvl = 15' >> /etc/sysctl.conf
 echo 'net.ipv4.tcp_fin_timeout = 10' >> /etc/sysctl.conf
+echo 'vm.overcommit_memory = 1' >> /etc/sysctl.conf
+echo 'net.core.somaxconn = 10240' >> /etc/sysctl.conf
 
 
 #See https://imroc.io/posts/kubernetes/troubleshooting-with-kubernetes-network/

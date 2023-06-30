@@ -56,7 +56,7 @@ const (
 	DefaultDockerComposeVersion = "v2.2.2"
 	DefaultRegistryVersion      = "2"
 	DefaultHarborVersion        = "v2.5.3"
-	DefaultMaxPods              = 110
+	DefaultMaxPods              = 200
 	DefaultPodPidsLimit         = 10000
 	DefaultNodeCidrMaskSize     = 24
 	DefaultIPIPMode             = "Always"
