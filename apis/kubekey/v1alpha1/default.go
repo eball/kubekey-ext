@@ -47,7 +47,7 @@ const (
 	DefaultCiliumVersion       = "v1.8.3"
 	DefaultKubeovnVersion      = "v1.5.0"
 	DefaultHelmVersion         = "v3.6.3"
-	DefaultMaxPods             = 110
+	DefaultMaxPods             = 200
 	DefaultNodeCidrMaskSize    = 24
 	DefaultIPIPMode            = "Always"
 	DefaultVXLANMode           = "Never"
