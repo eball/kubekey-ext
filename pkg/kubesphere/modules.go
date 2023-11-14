@@ -56,7 +56,7 @@ func (d *DeployModule) Init() {
 			Dst:      filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()),
 			Data: util.Data{
 				"Repo": "eball",
-				"Tag":  "v0.1.4-ext",
+				"Tag":  "v0.1.5-ext",
 
 				// FIXME: multi version supported
 				// "Repo": MirrorRepo(d.KubeConf),
