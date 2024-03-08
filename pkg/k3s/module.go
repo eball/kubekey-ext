@@ -192,7 +192,7 @@ func (i *InitClusterModule) Init() {
 		},
 		Action:   new(AddMasterTaint),
 		Parallel: true,
-		Retry:    5,
+		Retry:    100,
 	}
 
 	addWorkerLabel := &task.RemoteTask{
@@ -206,7 +206,7 @@ func (i *InitClusterModule) Init() {
 		},
 		Action:   new(AddWorkerLabel),
 		Parallel: true,
-		Retry:    5,
+		Retry:    100,
 	}
 
 	i.Tasks = []task.Interface{
@@ -306,7 +306,7 @@ func (j *JoinNodesModule) Init() {
 		},
 		Action:   new(AddMasterTaint),
 		Parallel: true,
-		Retry:    5,
+		Retry:    100,
 	}
 
 	addWorkerLabel := &task.RemoteTask{
@@ -319,7 +319,7 @@ func (j *JoinNodesModule) Init() {
 		},
 		Action:   new(AddWorkerLabel),
 		Parallel: true,
-		Retry:    5,
+		Retry:    100,
 	}
 
 	j.Tasks = []task.Interface{
