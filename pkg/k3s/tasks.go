@@ -187,6 +187,7 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 		"kube-reserved":   "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
 		"system-reserved": "cpu=200m,memory=250Mi,ephemeral-storage=1Gi",
 		"eviction-hard":   "memory.available<5%,nodefs.available<10%",
+		"config":          "/etc/rancher/k3s/kubelet.config",
 	}
 	defaultKubeProxyArgs := map[string]string{
 		"proxy-mode": "ipvs",
@@ -226,6 +227,20 @@ func (g *GenerateK3sService) Execute(runtime connector.Runtime) error {
 	if err := templateAction.Execute(runtime); err != nil {
 		return err
 	}
+
+	templateAction = action.Template{
+		Template: templates.K3sKubeletConfig,
+		Dst:      filepath.Join("/etc/rancher/k3s/", templates.K3sKubeletConfig.Name()),
+		Data: util.Data{
+			"MaxPods": g.KubeConf.Cluster.Kubernetes.MaxPods,
+		},
+	}
+
+	templateAction.Init(nil, nil)
+	if err := templateAction.Execute(runtime); err != nil {
+		return err
+	}
+
 	return nil
 }
 

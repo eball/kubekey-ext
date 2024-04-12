@@ -17,8 +17,9 @@
 package templates
 
 import (
-	"github.com/lithammer/dedent"
 	"text/template"
+
+	"github.com/lithammer/dedent"
 )
 
 var (
@@ -55,4 +56,10 @@ ExecStartPre=-/sbin/modprobe br_netfilter
 ExecStartPre=-/sbin/modprobe overlay
 ExecStart=/usr/local/bin/k3s $K3S_ROLE $K3S_ARGS $K3S_EXTRA_ARGS $K3S_SERVER_ARGS
     `)))
+
+	K3sKubeletConfig = template.Must(template.New("kubelet.config").Parse(
+		dedent.Dedent(`apiVersion: kubelet.config.k8s.io/v1beta1
+kind: KubeletConfiguration
+maxPods: {{ .MaxPods }}
+		`)))
 )
