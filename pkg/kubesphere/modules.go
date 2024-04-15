@@ -55,7 +55,7 @@ func (d *DeployModule) Init() {
 			Template: templates.KsInstaller,
 			Dst:      filepath.Join(common.KubeAddonsDir, templates.KsInstaller.Name()),
 			Data: util.Data{
-				"Repo": "eball",
+				"Repo": "beclab",
 				"Tag":  "v0.1.7-ext",
 
 				// FIXME: multi version supported
